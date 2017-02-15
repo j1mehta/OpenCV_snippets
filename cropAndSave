@@ -1,0 +1,17 @@
+import glob
+import cv2
+
+
+path = '/Users/kaylab/Desktop/cropped/NOF/NoF/*.jpg'
+path_save = '/Users/kaylab/Desktop/cropped/NOF/NoF_Cropped/'
+
+def crop_img(img_file, file_name):
+    img = cv2.imread(img_file)
+    crop_i = img[240:480, 240:480] # Crop from x, y, w, h -> 100, 200, 300, 400
+    # NOTE: its img[y: y + h, x: x + w] and *not* img[x: x + w, y: y + h]
+    #cv2.imshow("cropped", crop_i)
+    #cv2.waitKey(0)
+    cv2.imwrite(path_save+file_name, crop_i)
+    
+for (i,image_file) in enumerate(glob.iglob('/Users/kaylab/Desktop/cropped/NOF/NoF/*.jpg')):
+        crop_img(image_file, image_file[38:])
