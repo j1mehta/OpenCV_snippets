@@ -3,10 +3,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from PIL import Image
 
+import logging
+
+logging.basicConfig(filename="imageProcess.log", level=logging.DEBUG)
+logger = logging.getLogger('imageProcess')
+
 
 class imageProcess(object):
 
-    def __init__(self):
+    def __init__(self, r = 0.3, g = 0.59, b = 0.11):
         """
         This is a simple image processing class 
         supporting conversion to grayscale and 
@@ -15,76 +20,105 @@ class imageProcess(object):
         r, g, b are weights for weighted average
         conversion to grayscale
         """
-        self.r = 0.3
-        self.g = 0.59
-        self.b = 0.11
+        self.r = r
+        self.g = g
+        self.b = b
 
-    def average(self, pixel):
+    def __toGrayScaleHelper(self, image, flag):
         """
-        Average of 3 channels
+        Core of toGrayScale function involving pixel
+        manipulation
+            
+        #Returns
+            Grayscale image
         """
-        return (pixel[0] + pixel[1] + pixel[2]) / 3
-
-    def weightedAverage(self, pixel):
-        """
-        Weighted gray scale based on human 
-        eye perception
-        """
-        return self.r * pixel[0] + self.g * pixel[1] + self.b * pixel[2]
-
-    def toGrayScale(self, flag, image):
-        """
-        Returns a grayscaled image and 
-        saves it
-        """
+        logger.debug("No of dimension of input image is {}".format(image.ndim))
         assert (image.ndim == 3), "Input image is not RGB"
-        grey = np.zeros((image.shape[0], image.shape[1]))  
-        if flag == 0:
-            for row in range(len(image)):
-                for col in range(len(image[row])):
-                    grey[row][col] = self.weightedAverage(image[row][col])
-        if flag == 1:
-            for row in range(len(image)):
-                for col in range(len(image[row])):
-                    grey[row][col] = self.average(image[row][col])
         
-        img = Image.fromarray(grey)                    
-        misc.imsave('gray.jpg', img)
+        #declare a numpy array that would store the grayscale
+        grey = np.zeros((image.shape[0], image.shape[1]))  
+        
+        if flag == 0:
+            grey = self.r * image[:,:,0] + self.g * image[:,:,1] 
+            + self.b * image[:,:,2]
+
+        if flag == 1:
+            #using numpy array automatically handles overflow, 
+            #preserving image quality
+            grey = image.sum(axis=2)/3
+        
+        img = Image.fromarray(grey)                   
+        return img
+        
+    def toGrayScale(self, image, save, filename = None,
+                    flag=0):
+        """
+        Converts an RGB image to a grayscaled image and 
+        saves it with filename
+           
+        #Arguments
+            image: input image to be converted
+            flag: specifies whether averaging (1)
+                or weighted averaging desired (0)
+                0 is set as default
+            save: whether to save(1) or not
+            filename: name with which the transformed
+            image is stored
+            
+        #Returns
+            Grayscale image
+        """
+        logger.info("Conversion to grayscale and saving as {}".format(filename))
+        
+        img = self.__toGrayScaleHelper(image, flag)
+        
+        if save == True:
+            assert(filename != None), "Filename not specified"
+            misc.imsave(filename, img)
+            
         return img
     
-    def flipHelper(self, flag, img, image):
+    def ___flipHelper(self, flag, image):
         """
         Core of flipping functionality handling 
         pixel manipulations
+        
+        #Returns
+            flipped image horizontally/vertically
         """
-        rows = image.shape[0]
-        cols = image.shape[1]
-        if flag == 0:
-            for row in range(len(image)):
-                for col in range(len(image[row])):
-                    img[rows-(row+1)][col] = image[row][col]
-        if flag == 1:        
-            for row in range(len(image)):
-                for col in range(len(image[row])):
-                    img[row][cols-(col+1)] = image[row][col]
+        if flag==0:
+            img = np.flipud(image)
+            
+        if flag==1:
+            img = np.fliplr(image)
+                    
         return img
     
-    def flip(self, flag, image):
+    def flip(self, image, save, filename=None, flag=0):
         """
-        Returns flipped image vertically (flag=0) or 
-        horizontally (flag=1) and saves it
-        """
-        if(image.ndim==3):
-            img = np.zeros([image.shape[0],image.shape[1],image.ndim], dtype=np.uint8)
-            img = self.flipHelper(flag, img, image)
-            img = Image.fromarray(img, 'RGB')
+        Flips image vertically/horizontally
+        and saves it
+        
+        #Arguments
+            image: input image to be converted
+            flag: if flag 0 then flipped vertically
+            and if 1 then horizontally
+            save: whether to save(True) or not
+            filename: name with which the transformed
+            image is stored
             
-        else:
-            img = np.zeros((image.shape[0], image.shape[1])) 
-            img = self.flipHelper(flag, img, image)
-            img = Image.fromarray(img, 'gray')
-                    
-        misc.imsave('transformed.jpg', img)
+        #Returns
+            transformed image
+        """
+        
+        logger.info("Flipping image and saving as {}".format(filename))
+        
+        img = self.___flipHelper(flag, image)
+        
+        if save == True:
+            assert(filename != None), "Filename not specified"
+            misc.imsave(filename, img)
+        
         return img
 
 
@@ -108,12 +142,13 @@ if __name__ == '__main__':
     process.showImage(filename)
     
     #Uncomment to turn to grayscale
-    gray = process.toGrayScale(1, img)
+    gray = process.toGrayScale(img, True, 'gray1.jpg')
     plt.imshow(gray)
     plt.show()    
 
     
     #Uncomment to flip
-    imgFlip = process.flip(1, img)
+    imgFlip = process.flip(img, True, 'flip.jpg')
     plt.imshow(imgFlip)
     plt.show()    
+    
