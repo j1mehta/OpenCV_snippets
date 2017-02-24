@@ -46,7 +46,9 @@ class imageProcess(object):
             #using numpy array automatically handles overflow, 
             #preserving image quality
             grey = image.sum(axis=2)/3
-        
+            
+        #returning datatype as "Image" instead of numpy array
+        #because doing a plot.show on gray gives color distortion
         img = Image.fromarray(grey)                   
         return img
         
